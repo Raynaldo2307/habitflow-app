@@ -1,35 +1,44 @@
-import 'dart:nativewrappers/_internal/vm/lib/internal_patch.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 class AuthService {
-  final FirebaseAuth _auth =FirebaseAuth.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  Future<User?> registerWithEmail (String email, String password) async {
+  // Register user
+  Future<String?> registerWithEmail(String email, String password) async {
     try {
-      UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-      return result.user;
-    } catch (e){
-      printToConsole('Registration Error: $e');
-       return null;
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      return null; // null means success
+    } on FirebaseAuthException catch (e) {
+      return e.message; // meaningful error
+    } catch (e) {
+      return "Unknown error: $e";
     }
-
   }
 
-Future<User?> loginWithEmail(String email, String password) async{
-  try {
-    UserCredential result = await _auth.createUserWithEmailAndPassword(email: email, password: password);
-    return result.user;
-  }catch(e){
-    printToConsole('Login Error: $e');
-    return null;
+  // Login user
+  Future<String?> loginWithEmail(String email, String password) async {
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+      return null; // null means success
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return "Unknown error: $e";
+    }
   }
-}
-Future<void> signOut() async{
-  try{
+
+  Future<void> signOut() async {
     await _auth.signOut();
-  }catch (e){
-    printToConsole('Sign Out Error: $e');
-  }
+  
+  
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.remove('seenOnboarding');  // reset onboarding
 }
-Stream<User?> get authStateChanges => _auth.authStateChanges();
+  
+
+  Stream<User?> get authStateChanges => _auth.authStateChanges();
 }
